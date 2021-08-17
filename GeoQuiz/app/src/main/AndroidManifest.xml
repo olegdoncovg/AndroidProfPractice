@@ -11,6 +11,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.GeoQuiz">
+        <activity android:name=".CheatActivity"></activity>
 
         <meta-data android:name="android.allow_multiple_resumed_activities" android:value="true" />
 
