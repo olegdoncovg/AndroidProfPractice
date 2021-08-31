@@ -12,6 +12,7 @@ import android.widget.EditText
 import androidx.fragment.app.Fragment
 
 class CrimeFragment : Fragment() {
+
     private lateinit var crime: Crime
     private lateinit var titleField: EditText
     private lateinit var dateButton: Button
@@ -28,9 +29,11 @@ class CrimeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_crime, container, false)
+
         titleField = view.findViewById(R.id.crime_title) as EditText
         dateButton = view.findViewById(R.id.crime_date) as Button
         solvedCheckBox = view.findViewById(R.id.crime_solved) as CheckBox
+
         dateButton.apply {
             text = crime.date.toString()
             isEnabled = false
@@ -41,14 +44,16 @@ class CrimeFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
+
         val titleWatcher = object : TextWatcher {
+
             override fun beforeTextChanged(
                 sequence: CharSequence?,
                 start: Int,
                 count: Int,
                 after: Int
             ) {
-// Это пространство оставлено пустым специально
+                // This space intentionally left blank
             }
 
             override fun onTextChanged(
@@ -61,9 +66,10 @@ class CrimeFragment : Fragment() {
             }
 
             override fun afterTextChanged(sequence: Editable?) {
-// И это
+                // This one too
             }
         }
+
         titleField.addTextChangedListener(titleWatcher)
 
         solvedCheckBox.apply {
