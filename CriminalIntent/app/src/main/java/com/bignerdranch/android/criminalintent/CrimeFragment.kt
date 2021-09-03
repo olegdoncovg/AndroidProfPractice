@@ -10,12 +10,16 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResultListener
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import java.util.*
 
 private const val TAG = "CrimeFragment"
 private const val ARG_CRIME_ID = "crime_id"
+private const val DIALOG_DATE = "DialogDate"
+const val REQUEST_DATE_KEY = "REQUEST_DATE_KEY"
+const val REQUEST_DATE_BUNDLE = "REQUEST_DATE_BUNDLE"
 
 class CrimeFragment : Fragment() {
 
@@ -23,9 +27,8 @@ class CrimeFragment : Fragment() {
     private lateinit var titleField: EditText
     private lateinit var dateButton: Button
     private lateinit var solvedCheckBox: CheckBox
-    private val crimeDetailViewModel: CrimeDetailViewModel by lazy {
-        ViewModelProvider(this).get(CrimeDetailViewModel::class.java)
-    }
+
+    private val crimeDetailViewModel: CrimeDetailViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,11 +47,6 @@ class CrimeFragment : Fragment() {
         titleField = view.findViewById(R.id.crime_title) as EditText
         dateButton = view.findViewById(R.id.crime_date) as Button
         solvedCheckBox = view.findViewById(R.id.crime_solved) as CheckBox
-
-        dateButton.apply {
-            text = crime.date.toString()
-            isEnabled = false
-        }
 
         return view
     }
@@ -99,6 +97,21 @@ class CrimeFragment : Fragment() {
             setOnCheckedChangeListener { _, isChecked ->
                 crime.isSolved = isChecked
             }
+        }
+
+        dateButton.setOnClickListener {
+            DatePickerFragment.newInstance(crime.date).apply {
+                //setTargetFragment(this@CrimeFragment, REQUEST_DATE)
+                show(this@CrimeFragment.parentFragmentManager, DIALOG_DATE)
+            }
+        }
+
+        setFragmentResultListener(REQUEST_DATE_KEY) { _, bundle ->
+            // We use a String here, but any type that can be put in a Bundle is supported
+            val result = bundle.getLong(REQUEST_DATE_BUNDLE)
+            // Do something with the result
+            crime.date = Date(result)
+            updateUI()
         }
     }
 
