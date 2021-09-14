@@ -1,5 +1,7 @@
 package com.bignerdranch.android.criminalintent
 
+import android.Manifest
+import android.content.ContentResolver
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
@@ -18,6 +20,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResultListener
 import androidx.fragment.app.viewModels
@@ -39,6 +42,7 @@ class CrimeFragment : Fragment() {
     private lateinit var solvedCheckBox: CheckBox
     private lateinit var reportButton: Button
     private lateinit var suspectButton: Button
+//    private lateinit var callButton: Button
 
     private val getContent = registerForActivityResult(ActivityResultContracts.PickContact()) { contactUri: Uri? ->
         // Указать, для каких полей ваш запрос должен возвращать значения.
@@ -80,6 +84,7 @@ class CrimeFragment : Fragment() {
         dateButton = view.findViewById(R.id.crime_date) as Button
         solvedCheckBox = view.findViewById(R.id.crime_solved) as CheckBox
         reportButton = view.findViewById(R.id.crime_report) as Button
+//        callButton = view.findViewById(R.id.crime_call) as Button
         suspectButton = view.findViewById(R.id.crime_suspect) as Button
 
         return view
@@ -152,6 +157,11 @@ class CrimeFragment : Fragment() {
             }
         }
 
+//        callButton.setOnClickListener {
+//            val phone: String? = getPhoneNumber(crime.suspect)
+//            callNumber(phone)
+//        }
+
         suspectButton.apply {
             setOnClickListener { getContent.launch() }
 
@@ -221,4 +231,118 @@ class CrimeFragment : Fragment() {
             }
         }
     }
+//
+//    val requestPermissionLauncher =
+//        registerForActivityResult(
+//            ActivityResultContracts.RequestPermission()
+//        ) { isGranted: Boolean ->
+//            Log.i(TAG, "checkPermission-registerForActivityResult: isGranted=$isGranted")
+//            if (isGranted) {
+//                // Permission is granted. Continue the action or workflow in your
+//                // app.
+//            } else {
+//                // Explain to the user that the feature is unavailable because the
+//                // features requires a permission that the user has denied. At the
+//                // same time, respect the user's decision. Don't link to system
+//                // settings in an effort to convince the user to change their
+//                // decision.
+//            }
+//        }
+//
+//    //Manifest.permission.READ_CONTACTS
+//    fun checkPermission(permission: String): Boolean {
+//        when {
+//            ContextCompat.checkSelfPermission(
+//                requireContext(),
+//                permission
+//            ) == PackageManager.PERMISSION_GRANTED -> {
+//                // You can use the API that requires the permission.
+//                Log.i(TAG, "checkPermission-checkSelfPermission: true")
+//                return true
+//            }
+//            shouldShowRequestPermissionRationale(permission) -> {
+//                // In an educational UI, explain to the user why your app requires this
+//                // permission for a specific feature to behave as expected. In this UI,
+//                // include a "cancel" or "no thanks" button that allows the user to
+//                // continue using your app without granting the permission.
+////            showInContextUI(...)
+//                Log.i(TAG, "checkPermission-shouldShowRequestPermissionRationale: false")
+//                return false
+//            }
+//            else -> {
+//                Log.i(TAG, "checkPermission-else: false")
+//                // You can directly ask for the permission.
+//                // The registered ActivityResultCallback gets the result of this request.
+//                requestPermissionLauncher.launch(permission)
+//                return false
+//            }
+//        }
+//    }
+//
+//    private fun callNumber(phone: String?) {
+//        if (!checkPermission(Manifest.permission.CALL_PHONE)) return
+//        if (phone != null) {
+//            val intent = Intent(Intent.ACTION_CALL)
+//            intent.data = Uri.parse("tel:$phone")
+//            requireContext().startActivity(intent)
+//        }
+//    }
+//
+//    private fun getPhoneNumber(nameRequest: String): String? {
+//        if (!checkPermission(Manifest.permission.READ_CONTACTS)) return null
+//        var number: String? = null
+//
+//        val activity = requireActivity()
+//        val cr: ContentResolver = activity.getContentResolver()
+//        val cur = cr.query(
+//            ContactsContract.Contacts.CONTENT_URI,
+//            null, null, null, null
+//        )
+//
+//        if (cur?.count ?: 0 > 0) {
+//            while (cur != null && cur.moveToNext()) {
+//
+//                val columnIndex = cur.getColumnIndex(ContactsContract.Contacts._ID)
+//                if (columnIndex < 0)
+//                    continue
+//                val id = cur.getString(columnIndex)
+//                val columnIndex1 = cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)
+//                if (columnIndex1 < 0)
+//                    continue
+//                val name = cur.getString(columnIndex1)
+//                val columnIndex2 =
+//                    cur.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)
+//                if (columnIndex2 < 0)
+//                    continue
+//                if (cur.getInt(columnIndex2) > 0) {
+//                    val pCur = cr.query(
+//                        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+//                        null,
+//                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+//                        arrayOf(id),
+//                        null
+//                    )
+//                    if (pCur != null)
+//                        while (pCur.moveToNext()) {
+//                            val columnIndex3 = pCur.getColumnIndex(
+//                                ContactsContract.CommonDataKinds.Phone.NUMBER
+//                            )
+//                            if (columnIndex3 < 0)
+//                                continue
+//                            val phoneNo = pCur.getString(
+//                                columnIndex3
+//                            )
+//                            Log.i(TAG, "callButton.setOnClickListener: Name: $name")
+//                            Log.i(TAG, "callButton.setOnClickListener: Phone Number: $phoneNo")
+//                            if (name == nameRequest) {
+//                                number = phoneNo
+//                            }
+//                        }
+//                    pCur!!.close()
+//                }
+//            }
+//        }
+//        cur?.close()
+//        return number
+//    }
 }
