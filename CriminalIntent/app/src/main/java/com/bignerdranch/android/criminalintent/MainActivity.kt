@@ -6,7 +6,7 @@ import java.util.*
 
 private const val TAG = "MainActivity"
 
-class MainActivity : AppCompatActivity(), CrimeListFragment.Callbacks {
+class MainActivity : AppCompatActivity(), CrimeListFragment.Callbacks, CrimeFragment.Callbacks {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,6 +26,15 @@ class MainActivity : AppCompatActivity(), CrimeListFragment.Callbacks {
 
     override fun onCrimeSelected(crimeId: UUID) {
         val fragment = CrimeFragment.newInstance(crimeId)
+        supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
+    override fun onShowImage(path: String) {
+        val fragment = DialogFragment.newInstance(path)
         supportFragmentManager
             .beginTransaction()
             .replace(R.id.fragment_container, fragment)

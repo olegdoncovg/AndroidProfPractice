@@ -1,5 +1,6 @@
 package com.bignerdranch.android.criminalintent
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
@@ -14,6 +15,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
@@ -34,6 +36,11 @@ private const val DATE_FORMAT = "EEE, MMM, dd"
 
 class CrimeFragment : Fragment() {
 
+    interface Callbacks {
+        fun onShowImage(path: String)
+    }
+
+    private var callbacks: Callbacks? = null
     private lateinit var crime: Crime
     private lateinit var photoFile: File
     private lateinit var photoUri: Uri
@@ -70,6 +77,15 @@ class CrimeFragment : Fragment() {
         registerForActivityResult(ActivityResultContracts.TakePicture()) { sucess: Boolean? ->
             requireActivity().revokeUriPermission(photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             updatePhotoView()
+//            photoView.viewTreeObserver.addOnGlobalLayoutListener(object : OnGlobalLayoutListener {
+//                override fun onGlobalLayout() {
+//                    if (photoView.width > 0 && photoView.height > 0) {
+//                        photoView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+//
+//                        updatePhotoView()
+//                    }
+//                }
+//            })
         }
 
     private val crimeDetailViewModel: CrimeDetailViewModel by viewModels()
@@ -214,6 +230,10 @@ class CrimeFragment : Fragment() {
             }
         }
 
+        photoView.setOnClickListener {
+            callbacks?.onShowImage(photoFile.absolutePath)
+        }
+
         setFragmentResultListener(REQUEST_DATE_KEY) { _, bundle ->
             // We use a String here, but any type that can be put in a Bundle is supported
             val result = bundle.getLong(REQUEST_DATE_BUNDLE)
@@ -228,9 +248,15 @@ class CrimeFragment : Fragment() {
         crimeDetailViewModel.saveCrime(crime)
     }
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        callbacks = context as Callbacks?
+    }
+
     override fun onDetach() {
         super.onDetach()
         requireActivity().revokeUriPermission(photoUri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+        callbacks = null
     }
 
     private fun updateUI() {
@@ -249,7 +275,7 @@ class CrimeFragment : Fragment() {
 
     private fun updatePhotoView() {
         if (photoFile.exists()) {
-            val bitmap = getScaledBitmap(photoFile.path, requireActivity())
+            val bitmap = getScaledBitmap(photoFile.path,  requireActivity())//photoView.width, photoView.height)
             photoView.setImageBitmap(bitmap)
         } else {
             photoView.setImageDrawable(null)
