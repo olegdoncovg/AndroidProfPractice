@@ -5,7 +5,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.bignerdranch.android.photogallery.api.FlickrApi
 import com.bignerdranch.android.photogallery.api.FlickrResponse
+import com.bignerdranch.android.photogallery.api.PhotoDeserializer
 import com.bignerdranch.android.photogallery.api.PhotoResponse
+import com.google.gson.GsonBuilder
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -18,9 +20,14 @@ class FlickrFetchr {
     private val flickrApi: FlickrApi
 
     init {
+        val gson = GsonBuilder()
+            .serializeNulls()
+            .registerTypeAdapter(PhotoResponse::class.java, PhotoDeserializer())
+            .create()
+
         val retrofit: Retrofit = Retrofit.Builder()
             .baseUrl("https://api.flickr.com/")
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
         flickrApi = retrofit.create(FlickrApi::class.java)
     }
