@@ -25,7 +25,7 @@ class PhotoDeserializer : JsonDeserializer<PhotoResponse> {
 
                 photosList.add(
                     GalleryItem(
-                        "123" + photoObj.get("title").asString,
+                        photoObj.get("title").asString,
                         photoObj.get("id").asString,
                         photoObj.get("url_s").asString
                     )

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -17,6 +18,31 @@ class PhotoGalleryFragment : Fragment() {
     private lateinit var photoGalleryViewModel: PhotoGalleryViewModel
     private lateinit var photoRecyclerView: RecyclerView
 
+    private val listener: OnChangeListener = OnChangeListener()
+
+    private inner class OnChangeListener : OnGlobalLayoutListener {
+        private var recyclerViewWidth = 0
+        private var spanCount: Int = 0
+        override fun onGlobalLayout() {
+            val w = photoRecyclerView.width
+            if (w > 0 && w != recyclerViewWidth) {
+                recyclerViewWidth = w
+                val newSpanCount: Int =
+                    1f.coerceAtLeast(w / resources.getDimension(R.dimen.min_column_width)).toInt()
+
+                if (spanCount != newSpanCount) {
+                    spanCount = newSpanCount;
+                    photoRecyclerView.layoutManager = GridLayoutManager(context, spanCount)
+                }
+            }
+        }
+
+        fun clear() {
+            recyclerViewWidth = 0
+            spanCount = 0
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         photoGalleryViewModel = ViewModelProvider(this).get(PhotoGalleryViewModel::class.java)
@@ -29,8 +55,14 @@ class PhotoGalleryFragment : Fragment() {
     ): View {
         val view = inflater.inflate(R.layout.fragment_photo_gallery, container, false)
         photoRecyclerView = view.findViewById(R.id.photo_recycler_view)
-        photoRecyclerView.layoutManager = GridLayoutManager(context, 3)
+        photoRecyclerView.viewTreeObserver.addOnGlobalLayoutListener(listener)
         return view
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        photoRecyclerView.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+        listener.clear()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
