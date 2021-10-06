@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Message
 import android.util.Log
+import androidx.collection.LruCache
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
@@ -50,6 +51,13 @@ class ThumbnailDownloader<in T>(
             }
         }
 
+    var cacheSize = 4 * 1024 * 1024 // 4MiB
+    var bitmapCache : LruCache<String, Bitmap> = object : LruCache<String, Bitmap>(cacheSize) {
+        override fun sizeOf(key: String, value: Bitmap): Int {
+            return value.byteCount
+        }
+    }
+
     private var hasQuit = false
     private lateinit var requestHandler: Handler
     private val requestMap = ConcurrentHashMap<T, String>()
@@ -83,7 +91,12 @@ class ThumbnailDownloader<in T>(
 
     private fun handleRequest(target: T) {
         val url = requestMap[target] ?: return
-        val bitmap = flickrFetchr.fetchPhoto(url) ?: return
+
+        var bitmap = bitmapCache.get(url)
+
+        bitmap = bitmap ?: flickrFetchr.fetchPhoto(url) ?: return
+
+        bitmapCache.put(url, bitmap)
 
         responseHandler.post(Runnable {
             if (requestMap[target] != url || hasQuit) {
