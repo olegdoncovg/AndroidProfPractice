@@ -1,5 +1,6 @@
 package com.bignerdranch.android.photogallery
 
+import android.content.Context
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -8,7 +9,9 @@ import android.os.Handler
 import android.util.Log
 import android.view.*
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
+import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
+import android.widget.ProgressBar
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -17,11 +20,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
+
 private const val TAG = "PhotoGalleryFragment"
 
 class PhotoGalleryFragment : Fragment() {
     private lateinit var photoGalleryViewModel: PhotoGalleryViewModel
     private lateinit var photoRecyclerView: RecyclerView
+    private lateinit var progressBar: ProgressBar
     private lateinit var thumbnailDownloader: ThumbnailDownloader<PhotoHolder>
 
     private val listener: OnChangeListener = OnChangeListener()
@@ -75,6 +80,7 @@ class PhotoGalleryFragment : Fragment() {
         )
 
         val view = inflater.inflate(R.layout.fragment_photo_gallery, container, false)
+        progressBar = view.findViewById(R.id.photo_search_progress)
         photoRecyclerView = view.findViewById(R.id.photo_recycler_view)
         photoRecyclerView.viewTreeObserver.addOnGlobalLayoutListener(listener)
         return view
@@ -95,6 +101,7 @@ class PhotoGalleryFragment : Fragment() {
             viewLifecycleOwner,
             Observer { galleryItems ->
                 photoRecyclerView.adapter = PhotoAdapter(galleryItems)
+                progressBar.visibility = View.GONE
             })
     }
 
@@ -143,6 +150,7 @@ class PhotoGalleryFragment : Fragment() {
                 override fun onQueryTextSubmit(queryText: String): Boolean {
                     Log.d(TAG, "QueryTextSubmit: $queryText")
                     photoGalleryViewModel.fetchPhotos(queryText)
+                    clearForSearch()
                     return true
                 }
 
@@ -162,9 +170,26 @@ class PhotoGalleryFragment : Fragment() {
         return when (item.itemId) {
             R.id.menu_item_clear -> {
                 photoGalleryViewModel.fetchPhotos("")
+                clearForSearch()
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun clearForSearch() {
+        photoRecyclerView.adapter = PhotoAdapter(emptyList())
+        progressBar.visibility = View.VISIBLE
+
+        hideSoftKeyboard()
+    }
+
+    private fun hideSoftKeyboard() {
+        val view: View? = requireActivity().currentFocus
+        if (view != null) {
+            val imm =
+                requireActivity().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
+            imm?.hideSoftInputFromWindow(view.windowToken, 0)
         }
     }
 
