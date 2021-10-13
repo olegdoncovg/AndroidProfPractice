@@ -45,6 +45,7 @@ class PhotoPageFragment : VisibleFragment() {
                     progressBar.progress = newProgress
                 }
             }
+
             override fun onReceivedTitle(view: WebView?, title: String?) {
                 (activity as AppCompatActivity).supportActionBar?.subtitle = title
             }
@@ -53,6 +54,14 @@ class PhotoPageFragment : VisibleFragment() {
         webView.loadUrl(uri.toString())
 
         return view
+    }
+
+    fun backPressed(): Boolean {
+        if (webView.canGoBack()) {
+            webView.goBack()
+            return true
+        }
+        return false
     }
 
     companion object {

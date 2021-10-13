@@ -20,6 +20,16 @@ class PhotoPageActivity : AppCompatActivity() {
         }
     }
 
+    override fun onBackPressed() {
+        val fm = supportFragmentManager
+        val currentFragment = fm.findFragmentById(R.id.fragment_container)
+
+        if (currentFragment != null && currentFragment is PhotoPageFragment && currentFragment.backPressed()) {
+            return
+        }
+        super.onBackPressed()
+    }
+
     companion object {
         fun newIntent(context: Context, photoPageUri: Uri): Intent {
             return Intent(context, PhotoPageActivity::class.java).apply {

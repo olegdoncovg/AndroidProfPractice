@@ -124,6 +124,14 @@ class PhotoGalleryFragment : VisibleFragment() {
         override fun onClick(view: View) {
             val intent = PhotoPageActivity.newIntent(requireContext(), galleryItem.photoPageUri)
             startActivity(intent)
+
+////To use Chrome to open page
+//            CustomTabsIntent.Builder()
+//                .setToolbarColor(ContextCompat.getColor(
+//                    requireContext(), R.color.purple_700))
+//                .setShowTitle(true)
+//                .build()
+//                .launchUrl(requireContext(), galleryItem.photoPageUri)
         }
     }
 
