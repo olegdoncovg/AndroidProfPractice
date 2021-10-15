@@ -56,31 +56,45 @@ class BoxDrawingView(context: Context, attrs: AttributeSet? = null) :
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val current = PointF(event.x, event.y)
-        var action = ""
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                action = "ACTION_DOWN"
-// Сбросить состояние объекта
-                currentBox = Box(current).also {
-                    boxen.add(it)
+
+        val pointerCount = event.pointerCount
+        for (i in 0 until pointerCount) {
+            val pointerIndex = i
+            val pointerId = event.getPointerId(pointerIndex)
+            if (pointerId == 0) {
+                val current = PointF(event.getX(pointerIndex), event.getY(pointerIndex))
+                var action = ""
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        action = "ACTION_DOWN"
+                        currentBox = Box(current).also {
+                            boxen.add(it)
+                        }
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        action = "ACTION_MOVE"
+                        updateCurrentBox(current)
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        action = "ACTION_UP"
+                        updateCurrentBox(current)
+                        currentBox = null
+                    }
+                    MotionEvent.ACTION_CANCEL -> {
+                        action = "ACTION_CANCEL"
+                        currentBox = null
+                    }
                 }
+                Log.i(TAG, "Finger1 - $action at x=${current.x}, y=${current.y}")
             }
-            MotionEvent.ACTION_MOVE -> {
-                action = "ACTION_MOVE"
-                updateCurrentBox(current)
-            }
-            MotionEvent.ACTION_UP -> {
-                action = "ACTION_UP"
-                updateCurrentBox(current)
-                currentBox = null
-            }
-            MotionEvent.ACTION_CANCEL -> {
-                action = "ACTION_CANCEL"
-                currentBox = null
+            if (pointerId == 1) {
+                val fingerTwoX = event.getX(pointerIndex)
+                val fingerTwoY = event.getY(pointerIndex)
+
+                currentBox?.start = PointF(fingerTwoX, fingerTwoY)
+                Log.i(TAG, "Finger2 - $event.action at x=${fingerTwoX}, y=${fingerTwoY}")
             }
         }
-        Log.i(TAG, "$action at x=${current.x}, y=${current.y}")
         return true
     }
 
