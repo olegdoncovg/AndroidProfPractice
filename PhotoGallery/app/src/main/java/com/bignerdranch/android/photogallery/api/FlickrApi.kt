@@ -14,5 +14,9 @@ interface FlickrApi {
     fun fetchUrlBytes(@Url url: String): Call<ResponseBody>
 
     @GET("services/rest?method=flickr.photos.search")
-    fun searchPhotos(@Query("text") query: String): Call<FlickrResponse>
+    fun searchPhotos(
+        @Query("text") query: String,
+        @Query("per_page") pageSize: Int,
+        @Query("text") pageNumber: Int
+    ): Call<FlickrResponse>
 }

@@ -6,8 +6,10 @@ import android.util.Log
 import androidx.annotation.WorkerThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.bignerdranch.android.photogallery.api.*
-import com.google.gson.GsonBuilder
+import com.bignerdranch.android.photogallery.api.FlickrApi
+import com.bignerdranch.android.photogallery.api.FlickrResponse
+import com.bignerdranch.android.photogallery.api.PhotoInterceptor
+import com.bignerdranch.android.photogallery.api.PhotoResponse
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -26,15 +28,15 @@ class FlickrFetchr {
             .addInterceptor(PhotoInterceptor())
             .build()
 
-        val gson = GsonBuilder()
-            .serializeNulls()
-            .registerTypeAdapter(PhotoResponse::class.java, PhotoDeserializer())
-            .create()
+//        val gson = GsonBuilder()
+//            .serializeNulls()
+//            .registerTypeAdapter(PhotoResponse::class.java, PhotoDeserializer())
+//            .create()
 
         val retrofit: Retrofit = Retrofit.Builder()
             .baseUrl("https://api.flickr.com/")
-            .addConverterFactory(GsonConverterFactory.create(gson))
-//            .addConverterFactory(GsonConverterFactory.create())
+//            .addConverterFactory(GsonConverterFactory.create(gson))
+            .addConverterFactory(GsonConverterFactory.create())
             .client(client)
             .build()
         flickrApi = retrofit.create(FlickrApi::class.java)
@@ -48,12 +50,12 @@ class FlickrFetchr {
         return fetchPhotoMetadata(fetchPhotosRequest())
     }
 
-    fun searchPhotosRequest(query: String): Call<FlickrResponse> {
-        return flickrApi.searchPhotos(query)
+    fun searchPhotosRequest(query: String, pageSize: Int, pageNumber: Int): Call<FlickrResponse> {
+        return flickrApi.searchPhotos(query, pageSize, pageNumber)
     }
 
-    fun searchPhotos(query: String): LiveData<List<GalleryItem>> {
-        return fetchPhotoMetadata(searchPhotosRequest(query))
+    fun searchPhotos(query: String, pageSize: Int, pageNumber: Int): LiveData<List<GalleryItem>> {
+        return fetchPhotoMetadata(searchPhotosRequest(query, pageSize, pageNumber))
     }
 
     private fun fetchPhotoMetadata(flickrRequest: Call<FlickrResponse>)

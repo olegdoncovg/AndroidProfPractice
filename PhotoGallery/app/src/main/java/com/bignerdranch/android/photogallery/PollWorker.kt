@@ -23,7 +23,7 @@ class PollWorker(val context: Context, workerParams: WorkerParameters) :
                 ?.photos
                 ?.galleryItems
         } else {
-            FlickrFetchr().searchPhotosRequest(query)
+            FlickrFetchr().searchPhotosRequest(query, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_NUMBER)
                 .execute()
                 .body()
                 ?.photos
