@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.annotation.WorkerThread
-import androidx.lifecycle.LiveData
+import androidx.core.util.Consumer
 import androidx.lifecycle.MutableLiveData
 import com.bignerdranch.android.photogallery.api.FlickrApi
 import com.bignerdranch.android.photogallery.api.FlickrResponse
@@ -46,21 +46,28 @@ class FlickrFetchr {
         return flickrApi.fetchPhotos()
     }
 
-    fun fetchPhotos(): LiveData<List<GalleryItem>> {
-        return fetchPhotoMetadata(fetchPhotosRequest())
-    }
+//    fun fetchPhotos(): LiveData<List<GalleryItem>> {
+//        return fetchPhotoMetadata(fetchPhotosRequest(), consumer)
+//    }
 
     fun searchPhotosRequest(query: String, pageSize: Int, pageNumber: Int): Call<FlickrResponse> {
         return flickrApi.searchPhotos(query, pageSize, pageNumber)
     }
 
-    fun searchPhotos(query: String, pageSize: Int, pageNumber: Int): LiveData<List<GalleryItem>> {
-        return fetchPhotoMetadata(searchPhotosRequest(query, pageSize, pageNumber))
+    fun searchPhotos(
+        query: String,
+        pageSize: Int,
+        pageNumber: Int,
+        consumer: Consumer<List<GalleryItem>>
+    ) {
+        fetchPhotoMetadata(searchPhotosRequest(query, pageSize, pageNumber), consumer)
     }
 
-    private fun fetchPhotoMetadata(flickrRequest: Call<FlickrResponse>)
-            : LiveData<List<GalleryItem>> {
-        val responseLiveData: MutableLiveData<List<GalleryItem>> = MutableLiveData()
+    private fun fetchPhotoMetadata(
+        flickrRequest: Call<FlickrResponse>,
+        consumer: Consumer<List<GalleryItem>>
+    ) {
+//        val responseLiveData: MutableLiveData<List<GalleryItem>> = MutableLiveData()
         flickrRequest.enqueue(object : Callback<FlickrResponse> {
             override fun onFailure(call: Call<FlickrResponse>, t: Throwable) {
                 Log.e(TAG, "Failed to fetch photos", t)
@@ -78,10 +85,10 @@ class FlickrFetchr {
                 galleryItems = galleryItems.filterNot {
                     it.url.isBlank()
                 }
-                responseLiveData.value = galleryItems
+                consumer.accept(galleryItems)
             }
         })
-        return responseLiveData
+//        return responseLiveData
     }
 
     @WorkerThread

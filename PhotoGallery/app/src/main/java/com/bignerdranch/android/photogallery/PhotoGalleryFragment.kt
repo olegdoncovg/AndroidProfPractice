@@ -6,21 +6,26 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.*
+import android.view.LayoutInflater
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.ProgressBar
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
+import androidx.core.util.Consumer
 import androidx.lifecycle.ViewModelProvider
 import androidx.paging.PagedList
+import androidx.paging.PagedListAdapter
 import androidx.paging.PositionalDataSource
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.work.*
+import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -28,11 +33,15 @@ import java.util.concurrent.TimeUnit
 private const val TAG = "PhotoGalleryFragment"
 private const val POLL_WORK = "POLL_WORK"
 
+const val DEFAULT_PAGE_SIZE: Int = 10
+const val DEFAULT_PAGE_NUMBER: Int = 1
+
 class PhotoGalleryFragment : VisibleFragment() {
     private lateinit var photoGalleryViewModel: PhotoGalleryViewModel
     private lateinit var photoRecyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var thumbnailDownloader: ThumbnailDownloader<PhotoHolder>
+    private lateinit var adapter: PhotoAdapter
 
     private val listener: OnChangeListener = OnChangeListener()
 
@@ -88,7 +97,28 @@ class PhotoGalleryFragment : VisibleFragment() {
         progressBar = view.findViewById(R.id.photo_search_progress)
         photoRecyclerView = view.findViewById(R.id.photo_recycler_view)
         photoRecyclerView.viewTreeObserver.addOnGlobalLayoutListener(listener)
+
+        init()
         return view
+    }
+
+    private fun init() {
+        // PagedList
+        val dataSource = MyPositionalDataSource()
+
+        val config = PagedList.Config.Builder()
+            .setEnablePlaceholders(false)
+            .setPageSize(DEFAULT_PAGE_SIZE)
+            .build()
+
+        val pagedList: PagedList<GalleryItem?> = PagedList.Builder<Int, GalleryItem?>(dataSource, config)
+            .setNotifyExecutor(MainThreadExecutor())
+            .setFetchExecutor(Executors.newSingleThreadExecutor())
+            .build()
+
+        adapter = PhotoAdapter()
+        adapter.submitList(pagedList);
+        photoRecyclerView.adapter = adapter
     }
 
     override fun onDestroyView() {
@@ -102,12 +132,12 @@ class PhotoGalleryFragment : VisibleFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        photoGalleryViewModel.galleryItemLiveData.observe(
-            viewLifecycleOwner,
-            Observer { galleryItems ->
-                photoRecyclerView.adapter = PhotoAdapter(galleryItems)
-                progressBar.visibility = View.GONE
-            })
+//        photoGalleryViewModel.galleryItemLiveData.observe(
+//            viewLifecycleOwner,
+//            Observer { galleryItems ->
+//                photoRecyclerView.adapter = PhotoAdapter(galleryItems)
+//                progressBar.visibility = View.GONE
+//            })
     }
 
     private inner class PhotoHolder(private val itemImageView: ImageView) :
@@ -138,28 +168,70 @@ class PhotoGalleryFragment : VisibleFragment() {
         }
     }
 
-    private inner class PhotoAdapter(private val galleryItems: List<GalleryItem>) :
-        RecyclerView.Adapter<PhotoHolder>() {
-        override fun onCreateViewHolder(
-            parent: ViewGroup,
-            viewType: Int
-        ): PhotoHolder {
-            val view =
-                layoutInflater.inflate(R.layout.list_item_gallery, parent, false) as ImageView
+    internal class MainThreadExecutor : Executor {
+        private val mHandler = Handler(Looper.getMainLooper())
+        override fun execute(command: Runnable?) {
+            mHandler.post(command!!)
+        }
+    }
+
+    internal class MyPositionalDataSource : PositionalDataSource<GalleryItem?>() {
+
+        private val flickrFetchr = FlickrFetchr()
+        override fun loadInitial(
+            params: LoadInitialParams,
+            callback: LoadInitialCallback<GalleryItem?>
+        ) {
+            Log.d(
+                TAG, "loadInitial, requestedStartPosition = " + params.requestedStartPosition +
+                        ", requestedLoadSize = " + params.requestedLoadSize
+            )
+            flickrFetchr.searchPhotos(
+                "forest",
+                params.requestedLoadSize,
+                params.requestedStartPosition / DEFAULT_PAGE_SIZE + 1,
+                Consumer<List<GalleryItem>> {
+                    callback.onResult(it, 0)
+                })
+        }
+
+        override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<GalleryItem?>) {
+            Log.d(
+                TAG,
+                "loadRange, startPosition = " + params.startPosition + ", loadSize = " + params.loadSize
+            )
+            flickrFetchr.searchPhotos(
+                "forest",
+                params.loadSize,
+                params.startPosition + 1,
+                Consumer<List<GalleryItem>> {
+                    callback.onResult(it)
+                })
+        }
+    }
+
+    private class DiffCallback : DiffUtil.ItemCallback<GalleryItem>() {
+        override fun areItemsTheSame(oldItem: GalleryItem, newItem: GalleryItem) =
+            oldItem === newItem
+        override fun areContentsTheSame(oldItem: GalleryItem, newItem: GalleryItem) =
+            oldItem == newItem
+    }
+
+    private inner class PhotoAdapter : PagedListAdapter<GalleryItem, PhotoHolder>(DiffCallback()) {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.list_item_gallery, parent, false) as ImageView
             return PhotoHolder(view)
         }
 
-        override fun getItemCount(): Int = galleryItems.size
         override fun onBindViewHolder(holder: PhotoHolder, position: Int) {
-            val galleryItem = galleryItems[position]
-            holder.bindGalleryItem(galleryItem)
             val placeholder: Drawable = ContextCompat.getDrawable(
                 requireContext(),
                 R.drawable.bill_up_close
             ) ?: ColorDrawable()
             holder.bindDrawable(placeholder)
-
-            thumbnailDownloader.queueThumbnail(holder, galleryItem.url)
+            val item = getItem(position)
+            if (item?.url != null) thumbnailDownloader.queueThumbnail(holder, item.url)
         }
     }
 
@@ -178,7 +250,7 @@ class PhotoGalleryFragment : VisibleFragment() {
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(queryText: String): Boolean {
                     Log.d(TAG, "QueryTextSubmit: $queryText")
-                    photoGalleryViewModel.fetchPhotos(queryText)
+//                    photoGalleryViewModel.fetchPhotos(queryText)
                     clearForSearch()
                     return true
                 }
@@ -190,7 +262,7 @@ class PhotoGalleryFragment : VisibleFragment() {
             })
 
             setOnSearchClickListener {
-                searchView.setQuery(photoGalleryViewModel.searchTerm, false)
+//                searchView.setQuery(photoGalleryViewModel.searchTerm, false)
             }
         }
 
@@ -207,7 +279,7 @@ class PhotoGalleryFragment : VisibleFragment() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.menu_item_clear -> {
-                photoGalleryViewModel.fetchPhotos("")
+//                photoGalleryViewModel.fetchPhotos("")
                 clearForSearch()
                 true
             }
@@ -240,7 +312,7 @@ class PhotoGalleryFragment : VisibleFragment() {
     }
 
     private fun clearForSearch() {
-        photoRecyclerView.adapter = PhotoAdapter(emptyList())
+//        photoRecyclerView.adapter = PhotoAdapter(emptyList())
         progressBar.visibility = View.VISIBLE
 
         hideSoftKeyboard()
