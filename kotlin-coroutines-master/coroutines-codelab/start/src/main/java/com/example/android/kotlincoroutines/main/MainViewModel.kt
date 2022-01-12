@@ -19,8 +19,9 @@ package com.example.android.kotlincoroutines.main
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.android.kotlincoroutines.util.BACKGROUND
+import androidx.lifecycle.viewModelScope
 import com.example.android.kotlincoroutines.util.singleArgViewModelFactory
+import kotlinx.coroutines.*
 
 /**
  * MainViewModel designed to store and manage UI-related data in a lifecycle conscious way. This
@@ -101,11 +102,14 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
      * Wait one second then update the tap count.
      */
     private fun updateTaps() {
-        // TODO: Convert updateTaps to use coroutines
         tapCount++
-        BACKGROUND.submit {
-            Thread.sleep(1_000)
-            _taps.postValue("${tapCount} taps")
+        // launch a coroutine in viewModelScope
+        viewModelScope.launch {
+            // suspend this coroutine for one second
+            delay(1_000)
+            // resume in the main dispatcher
+            // taps.text can be called directly from main thread
+            _taps.postValue("${tapCount} + taps")
         }
     }
 
@@ -122,15 +126,37 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
     fun refreshTitle() {
         // TODO: Convert refreshTitle to use coroutines
         _spinner.value = true
-        repository.refreshTitleWithCallbacks(object : TitleRefreshCallback {
-            override fun onCompleted() {
-                _spinner.postValue(false)
-            }
 
-            override fun onError(cause: Throwable) {
-                _snackBar.postValue(cause.message)
+        viewModelScope.launch {
+            val result = repository.refreshTitleWithCallbacks()
+            if (result as? Boolean == true)
+                _spinner.postValue(false)
+            else {
+                result as Throwable
+                _snackBar.postValue(result.message)
                 _spinner.postValue(false)
             }
-        })
+        }
     }
+
+//Example code
+//    // Make a network request without blocking the UI thread
+//    private fun makeNetworkRequest() {
+//        // launch a coroutine in viewModelScope
+//        viewModelScope.launch(Dispatchers.IO) {
+//            // slowFetch()
+//        }
+//    }
+
+//Not needed due to use "AndroidX lifecycle-viewmodel-ktx": viewModelScope.launch
+//    private val viewModelJob = Job()
+//
+//    private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
+//
+
+//Not needed due to use "AndroidX lifecycle-viewmodel-ktx": viewModelScope.launch
+//    override fun onCleared() {
+//        super.onCleared()
+//        viewModelJob.cancel()
+//    }
 }

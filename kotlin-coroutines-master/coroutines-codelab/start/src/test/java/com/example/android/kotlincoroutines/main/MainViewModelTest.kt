@@ -20,6 +20,8 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.example.android.kotlincoroutines.fakes.MainNetworkFake
 import com.example.android.kotlincoroutines.fakes.TitleDaoFake
 import com.example.android.kotlincoroutines.main.utils.MainCoroutineScopeRule
+import com.example.android.kotlincoroutines.main.utils.captureValues
+import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -45,4 +47,14 @@ class MainViewModelTest {
     fun whenMainClicked_updatesTaps() {
         // TODO: Write this
     }
+
+//    @Test
+//    fun whenMainViewModelClicked_showSnackbar() {
+//        runBlocking {
+//            subject.snackbar.captureValues {
+//                subject.onMainViewClicked()
+////                assertSendsValues(2_000, "Hello, from threads!")
+//            }
+//        }
+//    }
 }
